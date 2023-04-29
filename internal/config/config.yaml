@@ -1,0 +1,4 @@
+---
+gorm:
+    driver: "sqlite"
+    dsn: "./task-manager.db"

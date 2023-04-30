@@ -11,13 +11,13 @@ import (
 	"github.com/1005281342/task-manager/pkg/task/sayhi"
 )
 
-// Controller for workers
-type Controller struct {
-	once sync.Once
-}
+var once sync.Once
 
-func (c *Controller) Load(cfg config.Config, wg *sync.WaitGroup) {
-	c.once.Do(func() {
+// BController for workers
+type BController struct{}
+
+func New(cfg config.Config) BController {
+	once.Do(func() {
 		var srv = asynq.NewServer(
 			asynq.RedisClientOpt{Addr: cfg.Redis.Addr},
 			asynq.Config{
@@ -39,7 +39,6 @@ func (c *Controller) Load(cfg config.Config, wg *sync.WaitGroup) {
 		// ...register other handlers...
 
 		go func() {
-			defer wg.Done()
 			log.Println("starting worker")
 			if err := srv.Run(mux); err != nil {
 				log.Fatalf("could not run server: %v", err)
@@ -47,4 +46,6 @@ func (c *Controller) Load(cfg config.Config, wg *sync.WaitGroup) {
 			log.Println("close worker")
 		}()
 	})
+
+	return BController{}
 }

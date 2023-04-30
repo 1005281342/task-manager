@@ -14,17 +14,15 @@ import (
 	"github.com/1005281342/task-manager/pkg/db"
 )
 
-type Controller struct {
-	once sync.Once
-}
+var once sync.Once
 
-func (c *Controller) Load(cfg config.Config, wg *sync.WaitGroup) {
-	c.once.Do(func() {
-		var t, err = db.New(cfg.Gorm.Driver, cfg.Gorm.Dsn)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err = t.AutoMigrate(&entity.Task{}); err != nil {
+// Controller for scheduler
+type Controller struct{}
+
+func New(cfg config.Config, db db.Connection) Controller {
+	once.Do(func() {
+		var err error
+		if err = db.GetDB().AutoMigrate(&entity.Task{}); err != nil {
 			log.Fatal(err)
 		}
 
@@ -32,14 +30,14 @@ func (c *Controller) Load(cfg config.Config, wg *sync.WaitGroup) {
 		if mgr, err = asynq.NewPeriodicTaskManager(
 			asynq.PeriodicTaskManagerOpts{
 				RedisConnOpt:               asynq.RedisClientOpt{Addr: cfg.Redis.Addr},
-				PeriodicTaskConfigProvider: usecase.NewSchedulerUC(repo.NewTaskRepo(t)), // this provider object is the interface to your config source
-				SyncInterval:               10 * time.Second,                            // this field specifies how often sync should happen
+				PeriodicTaskConfigProvider: usecase.NewSchedulerUC(repo.NewTaskRepo(db.GetDB())),
+				// this provider object is the interface to your config source
+				SyncInterval: 10 * time.Second, // this field specifies how often sync should happen
 			}); err != nil {
 			log.Fatal(err)
 		}
 
 		go func() {
-			defer wg.Done()
 			// start the scheduler
 			log.Println("starting scheduler")
 			if err = mgr.Run(); err != nil {
@@ -50,4 +48,6 @@ func (c *Controller) Load(cfg config.Config, wg *sync.WaitGroup) {
 
 		return
 	})
+
+	return Controller{}
 }

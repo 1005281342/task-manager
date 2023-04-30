@@ -6,18 +6,32 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/1005281342/task-manager/internal/config"
 )
 
-func New(driver string, dsn string) (*gorm.DB, error) {
+type Connection struct {
+	db *gorm.DB
+}
+
+func (c Connection) GetDB() *gorm.DB {
+	return c.db
+}
+
+func New(cfg config.Config) Connection {
 	var d gorm.Dialector
-	switch driver {
+	switch cfg.Gorm.Driver {
 	case "sqlite":
-		d = sqlite.Open(dsn)
+		d = sqlite.Open(cfg.Gorm.Dsn)
 	case "postgres":
-		d = postgres.Open(dsn)
+		d = postgres.Open(cfg.Gorm.Dsn)
 	default:
-		return nil, fmt.Errorf("unsupported driver:" + driver)
+		panic(fmt.Errorf("unsupported driver:" + cfg.Gorm.Driver))
 	}
 
-	return gorm.Open(d)
+	var db, err = gorm.Open(d)
+	if err != nil {
+		panic(err)
+	}
+	return Connection{db: db}
 }

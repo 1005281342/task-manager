@@ -2,11 +2,11 @@ package task
 
 import (
 	"context"
-	"sync"
 
 	"github.com/1005281342/task-manager/internal/config"
+	"github.com/1005281342/task-manager/internal/controller/scheduler"
+	"github.com/1005281342/task-manager/internal/controller/worker"
 	"github.com/1005281342/task-manager/internal/entity"
-	"github.com/1005281342/task-manager/internal/taskscheduler"
 	"github.com/1005281342/task-manager/internal/usecase"
 	"github.com/1005281342/task-manager/internal/usecase/repo"
 	"github.com/1005281342/task-manager/pkg/db"
@@ -15,27 +15,20 @@ import (
 // Controller for tasks
 type Controller struct {
 	config.Config
-	uc usecase.Task
+	uc        usecase.Task
+	scheduler scheduler.Controller
+	worker    worker.BController
 }
 
-var once sync.Once
-
-func Load(cfg config.Config) (*Controller, error) {
-	var t, err = db.New(cfg.Gorm.Driver, cfg.Gorm.Dsn)
-	if err != nil {
-		return nil, err
-	}
-	if err = t.AutoMigrate(&entity.Task{}); err != nil {
+func Load(conn db.Connection, scheduler scheduler.Controller, worker worker.BController) (*Controller, error) {
+	var err error
+	if err = conn.GetDB().AutoMigrate(&entity.Task{}); err != nil {
 		return nil, err
 	}
 
-	var uc = usecase.NewTaskUC(repo.NewTaskRepo(t))
+	var uc = usecase.NewTaskUC(repo.NewTaskRepo(conn.GetDB()))
 
-	once.Do(func() {
-		go taskscheduler.Run(cfg)
-	})
-
-	return &Controller{uc: uc}, nil
+	return &Controller{uc: uc, scheduler: scheduler, worker: worker}, nil
 }
 
 // Index of tasks

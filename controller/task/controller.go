@@ -2,9 +2,11 @@ package task
 
 import (
 	"context"
+	"sync"
 
 	"github.com/1005281342/task-manager/internal/config"
 	"github.com/1005281342/task-manager/internal/entity"
+	"github.com/1005281342/task-manager/internal/taskscheduler"
 	"github.com/1005281342/task-manager/internal/usecase"
 	"github.com/1005281342/task-manager/internal/usecase/repo"
 	"github.com/1005281342/task-manager/pkg/db"
@@ -16,6 +18,8 @@ type Controller struct {
 	uc usecase.Task
 }
 
+var once sync.Once
+
 func Load(cfg config.Config) (*Controller, error) {
 	var t, err = db.New(cfg.Gorm.Driver, cfg.Gorm.Dsn)
 	if err != nil {
@@ -26,6 +30,10 @@ func Load(cfg config.Config) (*Controller, error) {
 	}
 
 	var uc = usecase.NewTaskUC(repo.NewTaskRepo(t))
+
+	once.Do(func() {
+		go taskscheduler.Run(cfg)
+	})
 
 	return &Controller{uc: uc}, nil
 }

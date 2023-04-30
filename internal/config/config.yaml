@@ -2,3 +2,6 @@
 gorm:
     driver: "sqlite"
     dsn: "./task-manager.db"
+
+redis:
+    addr: "192.168.8.42:6379"

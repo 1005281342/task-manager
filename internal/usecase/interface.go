@@ -3,6 +3,8 @@ package usecase
 import (
 	"context"
 
+	"github.com/hibiken/asynq"
+
 	"github.com/1005281342/task-manager/internal/entity"
 )
 
@@ -15,10 +17,22 @@ type Task interface {
 	Delete(ctx context.Context, id uint) error
 }
 
-type TaskRepo interface {
+type ListRepo interface {
 	List(context.Context) ([]entity.Task, error)
+}
+
+type TaskRepo interface {
+	ListRepo
 	Create(context.Context, *entity.Task) (*entity.Task, error)
 	Get(context.Context, uint) (*entity.Task, error)
 	Update(context.Context, uint, map[string]interface{}) error
 	Delete(context.Context, uint) error
+}
+
+type Scheduler interface {
+	GetConfigs() ([]*asynq.PeriodicTaskConfig, error)
+}
+
+type SchedulerRepo interface {
+	ListRepo
 }

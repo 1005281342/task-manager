@@ -21,10 +21,15 @@ func New() Config {
 }
 
 type Config struct {
-	Gorm Gorm `json:"gorm"`
+	Gorm  Gorm  `yaml:"gorm"`
+	Redis Redis `yaml:"redis"`
 }
 
 type Gorm struct {
 	Driver string `yaml:"driver"`
 	Dsn    string `yaml:"dsn"`
+}
+
+type Redis struct {
+	Addr string `yaml:"addr"`
 }

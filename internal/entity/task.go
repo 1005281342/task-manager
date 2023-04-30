@@ -8,7 +8,7 @@ type Task struct {
 	gorm.Model
 	CronSpec string `json:"cron_spec"`
 	Payload  string `json:"payload"`
-	Type     string `json:"type"`
+	Type     string `json:"task_type"`
 }
 
 func (t Task) TableName() string {
